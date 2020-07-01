@@ -2,7 +2,7 @@
 Examples of using DWave quantum annealing system
 
 ## Examples
-- [binary_least_square](./binary_least_square.py)
+- [binary_linear_least_square](./binary_linear_least_square.py)
   - Solve simple Laplace equation.
 
 ## References
