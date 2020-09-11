@@ -4,20 +4,30 @@ import numpy as np
 from tqdm import tqdm
 
 
-def setup_nbit_laplacian(N, n, j0=0, exact_x=True, random_seed=None):
+def discretize_matrix(matrix, bit_value):
+    return np.kron(matrix, bit_value)
+
+
+def get_bit_value(num_bits, fixed_point=0):
+    return np.array([2. ** (fixed_point - i)
+                    for i in range(1, num_bits + 1)])
+
+
+def setup_nbit_laplacian(N, num_bits,
+                         fixed_point=0, exact_x=True, random_seed=None):
     '''Get information about 1-D laplace equation.'''
 
     # number of predictor and number of response
-    num_predictor_discrete = n * N
+    num_predictor_discrete = num_bits * N
     num_response = N
 
     # matrix `A`
     A = np.eye(num_response, k=-1) + -2 * \
         np.eye(num_response, k=0) + np.eye(num_response, k=1)
     # set the bit value to discrete the actual value as a fixed point
-    bit_value = np.array([2. ** (j0 - i) for i in range(1, n + 1)])
+    bit_value = get_bit_value(num_bits, fixed_point=fixed_point)
     # discretized version of matrix `A`
-    A_discrete = np.kron(A, bit_value)
+    A_discrete = discretize_matrix(A, bit_value)
 
     if random_seed is None:
         rng = np.random.default_rng()
@@ -38,13 +48,13 @@ def setup_nbit_laplacian(N, n, j0=0, exact_x=True, random_seed=None):
         # vector `x`
         x = np.array(
             [
-                bit_value @ q[i*n:i*n+n]
+                bit_value @ q[i*num_bits:i*num_bits+num_bits]
                 for i in range(num_response)
             ]
         )
     else:
         # vector `x`
-        x = (2 ** j0) * rng.random(num_response)
+        x = (2 ** fixed_point) * rng.random(num_response)
 
     # calculate vector `b`
     b = A @ x
@@ -90,10 +100,17 @@ def bruteforce(A_discrete, b):
 
 
 def q_to_x(q, bit_value):
+    num_q_entry = len(q)
+    num_bits = len(bit_value)
+    num_x_entry = num_q_entry // num_bits
+
+    if num_x_entry * num_bits != num_q_entry:
+        raise ValueError('The length of q or bit_value is incorrect.')
+
     x = np.array(
         [
-            bit_value @ q[i*n:i*n+n]
-            for i in range(len(q) // len(bit_value))
+            bit_value @ q[i*num_bits:(i+1)*num_bits]
+            for i in range(num_x_entry)
         ]
     )
     return x
@@ -137,24 +154,36 @@ def get_qubo(A_discrete, b, eq_scaling_val=1 / 8):
 
 
 if __name__ == "__main__":
-    import neal
+    import warnings
+
     import numpy as np
     import pandas as pd
     import matplotlib.pyplot as plt
 
-    # from dwave.system import EmbeddingComposite, DWaveSampler
+    from neal import SimulatedAnnealingSampler
+    from dwave.system import EmbeddingComposite, DWaveSampler
 
     # setting
-    N = 3  # size of symmetric matrix `A`
-    n = 4  # number of n bits
-    j0 = 0  # n-bit value vector is defined from 2**(j0-1) to 2**(j0-n)
-    exact_x = False  # whether x can be perfectly discrete
+    # size of symmetric matrix `A`
+    N = 3
+    # number of bits
+    num_bits = 4
+    # n-vector bit value is defined from 2**(fixed_point-1) to 2**(fixed_point-n)
+    fixed_point = 0
+    # whether x can be perfectly discrete
+    exact_x = False
     random_seed = 19937
-    num_reads = 1000  # number of reads for SA/QA
+    # scaling factor for QUBO
+    eq_scaling_val = 1/8
+    # number of reads for Simulated annealing (SA) or Quantum annealing (QA)
+    num_reads = 1000
+    # sampler type must be one of {'SA', 'QA'}
+    sampler_type = 'SA'
 
     # setup A, x, b, A_discrete, bit_value
     output = setup_nbit_laplacian(
-        N, n, j0=j0, exact_x=exact_x, random_seed=random_seed
+        N, num_bits,
+        fixed_point=fixed_point, exact_x=exact_x, random_seed=random_seed
     )
     A = output['A']
     true_x = output['x']
@@ -163,9 +192,27 @@ if __name__ == "__main__":
     bit_value = output['bit_value']
 
     # solve A_discrete*q=b where q is a binary vector by simulated annealing
-    Q = get_qubo(A_discrete, true_b, eq_scaling_val=1 / 8)
-    sampler = neal.SimulatedAnnealingSampler()
-    sampleset = sampler.sample_qubo(Q, num_reads=num_reads)
+    Q = get_qubo(A_discrete, true_b, eq_scaling_val=eq_scaling_val)
+    if sampler_type == 'QA':
+        try:
+            sampler = EmbeddingComposite(DWaveSampler(solver={'qpu': True}))
+            _sampler_args = {}
+            if 'num_reads' in sampler.parameters:
+                _sampler_args['num_reads'] = num_reads
+            if 'answer_mode' in sampler.parameters:
+                _sampler_args['answer_mode'] = 'raw'
+            sampleset = sampler.sample_qubo(Q, **_sampler_args)
+        except ValueError:
+            warnings.warn('Cannot access QPU, use \
+                           SimulatedAnnealingSampler instead.')
+            sampler = SimulatedAnnealingSampler()
+            sampleset = sampler.sample_qubo(Q, num_reads=num_reads)
+    elif sampler_type == 'SA':
+        sampler = SimulatedAnnealingSampler()
+        sampleset = sampler.sample_qubo(Q, num_reads=num_reads)
+    else:
+        raise(ValueError("The sampler_type is wrong, \
+                          please enter 'SA' or 'QA'"))
 
     # solve A_discrete*q=b where q is a binary vector by brute force
     # Warning: this may take a lot of time!
@@ -207,6 +254,10 @@ if __name__ == "__main__":
         columns=lambda c: c if isinstance(c, str) else 'q'+str(c),
         inplace=True
     )
+    # lowest energy state x and q
+    lowest_q = sampleset_pd_agg.sort_values(
+        'energy').iloc[0, :num_q_entry].values
+    lowest_x = q_to_x(lowest_q, bit_value)
     # frequently occurring x and q
     frequent_q = sampleset_pd_agg.sort_values(
         'num_occurrences', ascending=False).iloc[0, :num_q_entry].values
@@ -238,6 +289,13 @@ if __name__ == "__main__":
     print('2-norm:', min_norm)
     print('='*50)
     print('# Simulated annealing/Quantum annealing')
+    print('lowest energy state x:')
+    print(lowest_x)
+    print('lowest energy state q:')
+    print(lowest_q)
+    print('b:', A @ lowest_x)
+    print('2-norm:', np.linalg.norm(A @ lowest_x - true_b))
+    print('-'*50)
     print('most frequently occurring x:')
     print(frequent_x)
     print('most frequently occurring q:')
