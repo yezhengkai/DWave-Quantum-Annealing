@@ -1,3 +1,5 @@
+"""binary linear least square."""
+
 from collections import defaultdict
 
 import numpy as np
@@ -41,7 +43,7 @@ def setup_nbit_laplacian(N, num_bits,
         # binary vector `q`
         q = rng.choice([0, 1], size=num_predictor_discrete)
         # vector `x`
-        x = q_to_x(q, bit_value)
+        x = q2x(q, bit_value)
     else:
         # vector `x`
         x = (rng.choice([-1, 1], size=num_response)
@@ -86,13 +88,13 @@ def bruteforce(A_discrete, b):
                 best_q = np.copy(q)
 
     if 'best_q' in locals():
-        best_x = q_to_x(best_q, bit_value)
+        best_x = q2x(best_q, bit_value)
         return best_q, best_x, min_norm
     else:
         raise NameError("name 'best_q' is not defined")
 
 
-def q_to_x(q, bit_value):
+def q2x(q, bit_value):
     """Convert vector of bit to vector of real value."""
     num_q_entry = len(q)
     num_bits = len(bit_value)
@@ -252,11 +254,11 @@ if __name__ == "__main__":
     # lowest energy state x and q
     lowest_q = sampleset_pd_agg.sort_values(
         'energy').iloc[0, :num_q_entry].values
-    lowest_x = q_to_x(lowest_q, bit_value)
+    lowest_x = q2x(lowest_q, bit_value)
     # frequently occurring x and q
     frequent_q = sampleset_pd_agg.sort_values(
         'num_occurrences', ascending=False).iloc[0, :num_q_entry].values
-    frequent_x = q_to_x(frequent_q, bit_value)
+    frequent_x = q2x(frequent_q, bit_value)
     # calculate expected x from x
     expected_x = sampleset_pd_agg.apply(
         lambda row: row.iloc[-num_x_entry:]
@@ -269,7 +271,7 @@ if __name__ == "__main__":
         * (row.num_occurrences / num_reads),
         axis=1
     ).sum() > 0.5  # bool
-    expected_x_discrete = q_to_x(tmp_q, bit_value)
+    expected_x_discrete = q2x(tmp_q, bit_value)
 
     # show results
     print('='*50)
