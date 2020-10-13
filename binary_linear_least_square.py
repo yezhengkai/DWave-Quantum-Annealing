@@ -9,21 +9,24 @@ def discretize_matrix(matrix, bit_value):
 
 
 def get_bit_value(num_bits, fixed_point=0):
-    return np.array([2. ** (fixed_point - i)
-                    for i in range(1, num_bits + 1)])
+    """The value of each bit in two's-complement binary fixed-point numbers."""
+    return np.array([-2 ** fixed_point if i == 0
+                     else 2. ** (fixed_point - i)
+                     for i in range(0, num_bits)])
 
 
 def setup_nbit_laplacian(N, num_bits,
                          fixed_point=0, exact_x=True, random_seed=None):
-    '''Get information about 1-D laplace equation.'''
+    """Get information about 1-D laplace equation."""
 
     # number of predictor and number of response
     num_predictor_discrete = num_bits * N
     num_response = N
 
     # matrix `A`
-    A = np.eye(num_response, k=-1) + -2 * \
-        np.eye(num_response, k=0) + np.eye(num_response, k=1)
+    A = (np.eye(num_response, k=-1)
+         - 2 * np.eye(num_response, k=0)
+         + np.eye(num_response, k=1))
     # set the bit value to discrete the actual value as a fixed point
     bit_value = get_bit_value(num_bits, fixed_point=fixed_point)
     # discretized version of matrix `A`
@@ -36,25 +39,13 @@ def setup_nbit_laplacian(N, num_bits,
 
     if exact_x:
         # binary vector `q`
-        q = np.array(
-            [
-                int(x)
-                for x in format(
-                    rng.integers(0, 2 ** (num_predictor_discrete)),
-                    f'0{num_predictor_discrete}b'
-                )
-            ]
-        )
+        q = rng.choice([0, 1], size=num_predictor_discrete)
         # vector `x`
-        x = np.array(
-            [
-                bit_value @ q[i*num_bits:i*num_bits+num_bits]
-                for i in range(num_response)
-            ]
-        )
+        x = q_to_x(q, bit_value)
     else:
         # vector `x`
-        x = (2 ** fixed_point) * rng.random(num_response)
+        x = (rng.choice([-1, 1], size=num_response)
+             * (2 ** fixed_point) * rng.random(num_response))
 
     # calculate vector `b`
     b = A @ x
@@ -70,10 +61,10 @@ def setup_nbit_laplacian(N, num_bits,
 
 
 def bruteforce(A_discrete, b):
-    '''Solve A_discrete*q=b where q is a binary vector by brute force.'''
+    """Solve A_discrete*q=b where q is a binary vector by brute force."""
 
     # number of predictor
-    num_response, num_predictor_discrete = A_discrete.shape
+    num_predictor_discrete = A_discrete.shape[1]
     # total number of solutions
     num_solution = 2 ** num_predictor_discrete
     # initialize minimum 2-norm
@@ -94,12 +85,15 @@ def bruteforce(A_discrete, b):
                 min_norm = new_norm
                 best_q = np.copy(q)
 
-    best_x = q_to_x(best_q, bit_value)
-
-    return best_q, best_x, min_norm
+    if 'best_q' in locals():
+        best_x = q_to_x(best_q, bit_value)
+        return best_q, best_x, min_norm
+    else:
+        raise NameError("name 'best_q' is not defined")
 
 
 def q_to_x(q, bit_value):
+    """Convert vector of bit to vector of real value."""
     num_q_entry = len(q)
     num_bits = len(bit_value)
     num_x_entry = num_q_entry // num_bits
@@ -117,10 +111,10 @@ def q_to_x(q, bit_value):
 
 
 def get_qubo(A_discrete, b, eq_scaling_val=1 / 8):
-    '''
+    """
     Get coefficients of a quadratic unconstrained binary optimization (QUBO)
     problem defined by the dictionary.
-    '''
+    """
 
     # number of predictor and number of response
     num_predictor = A_discrete.shape[1]
@@ -166,9 +160,10 @@ if __name__ == "__main__":
     # setting
     # size of symmetric matrix `A`
     N = 3
-    # number of bits
+    # number of bits (include sign bit)
     num_bits = 4
-    # n-vector bit value is defined from 2**(fixed_point-1) to 2**(fixed_point-n)
+    # n-vector bit value is defined by
+    # [-2**(fixed_point), 2**(fixed_point-1), ..., 2**(fixed_point-n)]
     fixed_point = 0
     # whether x can be perfectly discrete
     exact_x = False
