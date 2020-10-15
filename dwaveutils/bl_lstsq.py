@@ -3,6 +3,7 @@
 from collections import defaultdict
 
 import numpy as np
+from scipy.sparse import diags, dok_matrix
 from tqdm import tqdm
 
 
@@ -73,29 +74,18 @@ def get_qubo(A_discrete, b, eq_scaling_val=1 / 8):
     problem defined by the dictionary.
     """
 
-    # number of predictor and number of response
-    num_predictor = A_discrete.shape[1]
-    num_response = b.size  # or A_discrete.shape[0]
-
-    # initialize QUBO
-    qubo_a = np.zeros(num_predictor)
-    qubo_b = np.zeros((num_predictor, num_predictor))
-    Q = defaultdict(int)
-
     # define weights
-    for i in range(num_response):
-        for j in range(num_predictor):
-            qubo_a[j] += A_discrete[i, j] * (A_discrete[i, j] - 2 * b[i])
-            for k in range(j):
-                qubo_b[j, k] += 2 * A_discrete[i, j] * A_discrete[i, k]
+    # https://stackoverflow.com/questions/37524151/convert-a-deafultdict-to-numpy-matrix-or-a-csv-of-2d-matrix
+    # https://scipy-lectures.org/advanced/scipy_sparse/dok_matrix.html
+    qubo_a = (np.diag(A_discrete.T @ A_discrete)
+              - 2 * A_discrete.T @ b.flatten())
+    qubo_b = dok_matrix(np.tril(2 * A_discrete.T @ A_discrete, k=-1))
 
     # define objective
-    for i in range(num_predictor):
-        if qubo_a[i] != 0:
-            Q[(i, i)] = eq_scaling_val * qubo_a[i]
-        for j in range(num_predictor):
-            if qubo_b[i, j] != 0:
-                Q[(i, j)] = eq_scaling_val * qubo_b[i, j]
+    Q = defaultdict(
+        int,
+        (eq_scaling_val * (diags(qubo_a, format='dok') + qubo_b)).items()
+    )
 
     # define constrait
     # for i in range(qubo_a.size):
