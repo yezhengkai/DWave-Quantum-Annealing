@@ -1,6 +1,7 @@
 """binary linear least square."""
 
 from collections import defaultdict
+import warnings
 
 import numpy as np
 from scipy.sparse import diags, dok_matrix
@@ -11,11 +12,26 @@ def discretize_matrix(matrix, bit_value):
     return np.kron(matrix, bit_value)
 
 
-def get_bit_value(num_bits, fixed_point=0):
+def get_bit_value(num_bits, fixed_point=0, sign='pn'):
     """The value of each bit in two's-complement binary fixed-point numbers."""
-    return np.array([-2 ** fixed_point if i == 0
-                     else 2. ** (fixed_point - i)
-                     for i in range(0, num_bits)])
+    # 'pn': positive and negative value
+    # 'p': only positive value
+    # 'n': only negative value
+    accepted_sign = ['pn', 'p', 'n']
+    if sign not in accepted_sign:
+        warnings.warn('Use default `sign` setting.')
+        sign = 'pn'
+
+    if sign == 'pn':
+        return np.array([-2 ** fixed_point if i == 0
+                         else 2. ** (fixed_point - i)
+                         for i in range(0, num_bits)])
+    elif sign == 'p':
+        return np.array([2. ** (fixed_point - i)
+                         for i in range(1, num_bits + 1)])
+    else:
+        return np.array([-2. ** (fixed_point - i)
+                         for i in range(1, num_bits + 1)])
 
 
 def bruteforce(A_discrete, b, bit_value):

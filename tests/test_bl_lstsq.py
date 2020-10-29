@@ -24,9 +24,17 @@ def test_discretize_matrix():
 
 def test_get_bit_value():
     num_bits = 5
-    bit_value = bl_lstsq.get_bit_value(num_bits)
-    expected_result = np.array([-1, 0.5, 0.25, 0.125, 0.0625])
-    assert_array_equal(bit_value, expected_result,
+    bit_value1 = bl_lstsq.get_bit_value(num_bits)
+    expected_result1 = np.array([-1, 0.5, 0.25, 0.125, 0.0625])
+    assert_array_equal(bit_value1, expected_result1,
+                       err_msg='Wrong bit value')
+    bit_value2 = bl_lstsq.get_bit_value(num_bits, fixed_point=2, sign='p')
+    expected_result2 = np.array([2, 1, 0.5, 0.25, 0.125])
+    assert_array_equal(bit_value2, expected_result2,
+                       err_msg='Wrong bit value')
+    bit_value3 = bl_lstsq.get_bit_value(num_bits, fixed_point=1, sign='n')
+    expected_result3 = np.array([-1, -0.5, -0.25, -0.125, -0.0625])
+    assert_array_equal(bit_value3, expected_result3,
                        err_msg='Wrong bit value')
 
 
