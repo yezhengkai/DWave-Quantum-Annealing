@@ -195,6 +195,9 @@ class BaseSolver(metaclass=ABCMeta):
                 warnings.warn(f"Use default `{attr}`: {default_value}")
             else:
                 raise ValueError(f"Please enter a `{attr}`.")
+        elif params is None \
+                and getattr(self, attr, None) is not None:
+            pass
         else:
             if check_func is not None and callable(check_func):
                 check_func(params)
