@@ -1,6 +1,13 @@
 # DWave-Quantum-Annealing
 Examples of using DWave quantum annealing system
 
+## Requirements
+To run the examples, you should install the following packages.
+- matplotlib
+- pandas
+- [dwaveutils](https://github.com/yezhengkai/dwaveutils)
+- [simpeg-ecosys](https://github.com/yezhengkai/simpeg_ecosys)
+
 ## Examples
 - Solve Laplace's equation.
   - [Laplace_equation_1D.py](./examples/Laplace_equation_1D.py)
