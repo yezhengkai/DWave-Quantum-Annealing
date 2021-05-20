@@ -18,6 +18,9 @@ To run the examples, you should install the following packages.
   - [Poisson_equation_1D.py](./examples/Poisson_equation_1D.py)
   - [Poisson_equation_1D.ipynb](examples/Poisson_equation_1D.ipynb)
 
+**Caution**
+`dwaveutils` and `simpeg-ecosys` may frequently change the API in the near future, and the example may crash.
+
 ## References
 - [ThreeQ.jl](https://github.com/omalled/ThreeQ.jl)
 - [D-Wave System Documentation](https://docs.dwavesys.com/docs/latest/index.html#)
