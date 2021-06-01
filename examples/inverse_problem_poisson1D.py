@@ -9,10 +9,10 @@ import matplotlib as mpl
 from discretize import TensorMesh
 from simpeg_ecosys.mathematical import PoissonCellCentered, VolumeSource
 from neal import SimulatedAnnealingSampler
+from dwave.system import EmbeddingComposite, DWaveSampler
 
 import dwaveutils.inverse as dwinv
 from dwaveutils.utils import Binary2Float
-
 
 # suppress all warnings
 warnings.filterwarnings('ignore')
@@ -23,41 +23,33 @@ rng = np.random.default_rng(1234)
 # Set up forward modeling
 # Create `fwd_model` function
 num_params = 20  # number of model parameters
-is_simple_model = True  # {True, False}
 
-if is_simple_model:
-    A = (100 - 0.01) * rng.random((num_params, num_params)) + 0.01
+# Set the mesh
+delta = 1
+hx = np.ones(num_params) * delta
+origin = [0]
+mesh = TensorMesh([hx], origin=origin)
 
-    def fwd_model(model_params):
-        b = A @ model_params
-        return b
-else:
-    # Set the mesh
-    delta = 1
-    hx = np.ones(num_params) * delta
-    origin = [0]
-    mesh = TensorMesh([hx], origin=origin)
+# Define Poisson equation.
+bc_types = [["dirichlet", "dirichlet"]]
+bc_values = [[0, 0]]
 
-    # Define Poisson equation.
-    bc_types = [["dirichlet", "dirichlet"]]
-    bc_values = [[0, 0]]
+# Set the source term
+source1 = VolumeSource([[mesh.cell_centers_x[(mesh.n_cells//2)]]], values=[1])
+source_list = [source1]
 
-    # Set the source term
-    source1 = VolumeSource(
-        [[mesh.cell_centers_x[(mesh.n_cells//2)]]], values=[1])
-    source_list = [source1]
 
+def fwd_model(model_params):
     # Construct a PoissonCellCentered instance
-    def fwd_model(model_params):
-        poisson = PoissonCellCentered(
-            mesh, bc_types, bc_values,
-            source_list=source_list,
-            model_parameters=model_params
-        )
-        A = poisson.getA()
-        b = poisson.getRHS()
-        x = sp.linalg.spsolve(A, b)
-        return x
+    poisson = PoissonCellCentered(
+        mesh, bc_types, bc_values,
+        source_list=source_list,
+        model_parameters=model_params
+    )
+    A = poisson.getA()
+    b = poisson.getRHS()
+    x = sp.linalg.spsolve(A, b)
+    return x
 
 
 # Set up inverse problem
@@ -97,6 +89,9 @@ problem_params = {
 problem = dwinv.problem.BinaryInverseProblem(problem_params)
 
 sampler = SimulatedAnnealingSampler()
+# sampler = EmbeddingComposite(
+#     DWaveSampler(solver={'qpu': True}, postprocess="sampling")
+# )  # use postprocess
 sampling_params = {"num_reads": 100}
 iter_params = {"num_iter": 50, "verbose": True}
 solver = dwinv.solver.BinaryInverseIterativeSolver(
@@ -155,7 +150,7 @@ pred_resp = dwinv.utils.fwd_modeling(
 with np.printoptions(precision=4, suppress=True):
     print(f"Predicted response =\n{pred_resp}\n")
     print(f"Observed response  =\n{obs_resp}\n")
-    print(f"Residual sum of squares = {result['obj']}")
+    print(f"Residual sum of squares = {result['obj']:.8e}")
 # plot predicted response, obsversed response and residual
 mpl.rcParams.update(plot_params)
 fig, ax = plt.subplots(3, 1, sharex=True)

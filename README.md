@@ -18,8 +18,10 @@ To run the examples, you should install the following packages.
   - [Poisson_equation_1D.py](./examples/Poisson_equation_1D.py)
   - [Poisson_equation_1D.ipynb](examples/Poisson_equation_1D.ipynb)
 - Solve inverse problem.
-  - [inverse_problem.py](./examples/inverse_problem.py)
-  - [inverse_problem.ipynb](./examples/inverse_problem.ipynb)
+  - [inverse_problem_matvec.py](./examples/inverse_problem_matvec.py)
+  - [inverse_problem_matvec.ipynb](./examples/inverse_problem_matvec.ipynb)
+  - [inverse_problem_poisson1D.py](./examples/inverse_problem_poisson1D.py)
+  - [inverse_problem_poisson1D.ipynb](./examples/inverse_problem_poisson1D.ipynb)
 
 **Caution**
 `dwaveutils` and `simpeg-ecosys` may frequently change the API in the near future, and the example may crash.
