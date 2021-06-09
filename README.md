@@ -3,10 +3,14 @@ Examples of using DWave quantum annealing system
 
 ## Requirements
 To run the examples, you should install the following packages.
-- matplotlib
-- pandas
+- python = "^3.8"
+- matplotlib = "^3.3.3"
+- pandas = "^1.2.1"
+- simpeg = "^0.15.0"
 - [dwaveutils](https://github.com/yezhengkai/dwaveutils)
-- [simpeg-ecosys](https://github.com/yezhengkai/simpeg_ecosys)
+- [simpeg_ecosys](https://github.com/yezhengkai/simpeg_ecosys)
+
+**Note**: The notation for version constraints follows [poetry](https://python-poetry.org/docs/dependency-specification/).
 
 ## Examples
 - Solve Laplace's equation.
@@ -24,7 +28,7 @@ To run the examples, you should install the following packages.
   - [inverse_problem_poisson1D.ipynb](./examples/inverse_problem_poisson1D.ipynb)
 
 **Caution**
-`dwaveutils` and `simpeg-ecosys` may frequently change the API in the near future, and the example may crash.
+`dwaveutils` and `simpeg_ecosys` may frequently change the API in the near future, and the example may crash.
 
 ## References
 - [ThreeQ.jl](https://github.com/omalled/ThreeQ.jl)
