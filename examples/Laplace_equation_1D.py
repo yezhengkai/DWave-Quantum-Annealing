@@ -11,6 +11,7 @@ from neal import SimulatedAnnealingSampler
 from dwave.system import EmbeddingComposite, DWaveSampler
 
 from dwaveutils import bl_lstsq
+from dwaveutils.utils import Binary2Float
 
 
 # Define function
@@ -162,11 +163,11 @@ sampleset_pd_agg.rename(
 # lowest energy state x and q
 lowest_q = sampleset_pd_agg.sort_values(
     'energy').iloc[0, :num_q_entry].values
-lowest_x = bl_lstsq.q2x(lowest_q, bit_value)
+lowest_x = Binary2Float.to_fixed_point(lowest_q, bit_value)
 # frequently occurring x and q
 frequent_q = sampleset_pd_agg.sort_values(
     'num_occurrences', ascending=False).iloc[0, :num_q_entry].values
-frequent_x = bl_lstsq.q2x(frequent_q, bit_value)
+frequent_x = Binary2Float.to_fixed_point(frequent_q, bit_value)
 # calculate expected x from x
 expected_x = sampleset_pd_agg.apply(
     lambda row: row.iloc[-num_x_entry:]
@@ -179,7 +180,7 @@ tmp_q = sampleset_pd_agg.apply(
     * (row.num_occurrences / num_reads),
     axis=1
 ).sum() > 0.5  # bool
-expected_x_discrete = bl_lstsq.q2x(tmp_q, bit_value)
+expected_x_discrete = Binary2Float.to_fixed_point(np.array(tmp_q), bit_value)
 
 # Show results
 print('='*50)

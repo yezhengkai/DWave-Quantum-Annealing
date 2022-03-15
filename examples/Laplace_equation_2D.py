@@ -13,15 +13,18 @@ from neal import SimulatedAnnealingSampler
 from dwave.system import EmbeddingComposite, DWaveSampler
 
 from dwaveutils import bl_lstsq
+from dwaveutils.utils import Binary2Float
 
 
 # Define function
 def get_laplace_2D(N, delta, BC, num_bits, fixed_point=0):
     """Get information about 2D Laplace's equation (steady-state heat equation)."""
-    
+
     # Get finite-difference stiffness matrix
-    Ax = sparse.diags([-1, 2, -1], [-1, 0, 1], shape=(N['x'], N['x'])) / (delta['x'] ** 2)
-    Ay = sparse.diags([-1, 2, -1], [-1, 0, 1], shape=(N['y'], N['y'])) / (delta['y'] ** 2)
+    Ax = sparse.diags([-1, 2, -1], [-1, 0, 1],
+                      shape=(N['x'], N['x'])) / (delta['x'] ** 2)
+    Ay = sparse.diags([-1, 2, -1], [-1, 0, 1],
+                      shape=(N['y'], N['y'])) / (delta['y'] ** 2)
     Ix = sparse.identity(N['x'])
     Iy = sparse.identity(N['y'])
     A = (sparse.kron(Iy, Ax) + sparse.kron(Ay, Ix)).tocsc()
@@ -30,9 +33,9 @@ def get_laplace_2D(N, delta, BC, num_bits, fixed_point=0):
     b = np.zeros((N['y'], N['x']))
     # boundary conditions
     b[-1, :] = b[-1, :] + BC['top'] / (delta['y'] ** 2)
-    b[0, :] = b[0, :] + BC['bottom']  / (delta['y'] ** 2)
-    b[:, 0] = b[:, 0] + BC['left']  / (delta['x'] ** 2)
-    b[:, -1] = b[:, -1] + BC['right']  / (delta['x'] ** 2)
+    b[0, :] = b[0, :] + BC['bottom'] / (delta['y'] ** 2)
+    b[:, 0] = b[:, 0] + BC['left'] / (delta['x'] ** 2)
+    b[:, -1] = b[:, -1] + BC['right'] / (delta['x'] ** 2)
     b = sparse.csr_matrix(b.reshape(N['x']*N['y'], 1))
 
     # set the bit value to discrete the actual value as a fixed point
@@ -82,7 +85,7 @@ delta = {
 BC = {
     'top': 100,
     'bottom': 0,
-    'left': 0, 
+    'left': 0,
     'right': 0
 }
 # number of bits (include sign bit)
@@ -123,7 +126,8 @@ fig.tight_layout()
 
 
 # Solve A_discrete*q=b problem as BQM optimization through simulated annealing or quantum annealing
-Q = bl_lstsq.get_qubo(A_discrete, true_b.toarray(), eq_scaling_val=eq_scaling_val)
+Q = bl_lstsq.get_qubo(A_discrete, true_b.toarray(),
+                      eq_scaling_val=eq_scaling_val)
 if sampler_type == 'QA':
     try:
         sampler = EmbeddingComposite(DWaveSampler(solver={'qpu': True}))
@@ -148,7 +152,7 @@ else:
 num_q_entry = A_discrete.shape[1]
 sampleset_pd_agg = sampleset.aggregate().to_pandas_dataframe()
 lowest_q = sampleset_pd_agg.sort_values('energy').iloc[0, :num_q_entry].values
-lowest_x = bl_lstsq.q2x(lowest_q, bit_value)
+lowest_x = Binary2Float.to_fixed_point(lowest_q, bit_value)
 T = get_temperature(lowest_x, N, BC)
 
 # plot
