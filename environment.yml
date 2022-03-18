@@ -1,0 +1,7 @@
+name: DWave-Quantum-Annealing
+channels:
+dependencies:
+   - python>=3.9
+   - pip
+   - pip:
+     - -r requirements.txt
