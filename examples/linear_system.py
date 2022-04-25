@@ -15,8 +15,8 @@ from dwaveutils.utils import Binary2Float
 
 
 # Define function
-def get_laplace_1D(N, num_bits,
-                   fixed_point=0, exact_x=True, random_seed=None):
+def get_linear_system(N, num_bits,
+                      fixed_point=0, exact_x=True, random_seed=None):
     """Get information about 1D Laplace's equation."""
 
     # number of predictor and number of response
@@ -79,7 +79,7 @@ num_reads = 1000
 sampler_type = 'SA'
 
 # setup A, x, b, A_discrete, bit_value
-output = get_laplace_1D(
+output = get_linear_system(
     N, num_bits,
     fixed_point=fixed_point, exact_x=exact_x, random_seed=random_seed
 )

@@ -23,9 +23,10 @@ After creating an environment with all dependencies installed, configure your dw
 - Use `pip install -r requirement.txt` to install dependencies. (If you want to install dev dependencies, use `pip install -r requirement_dev.txt`)
 
 ## Examples
+- Solve system of linear equations
+  - [linear_system.py](./examples/linear_system.py)
+  - [linear_system.ipynb](examples/linear_system.ipynb)
 - Solve Laplace's equation.
-  - [Laplace_equation_1D.py](./examples/Laplace_equation_1D.py)
-  - [Laplace_equation_1D.ipynb](examples/Laplace_equation_1D.ipynb)
   - [Laplace_equation_2D.py](examples/Laplace_equation_2D.py) 
   - [Laplace_equation_2D.ipynb](examples/Laplace_equation_2D.ipynb)
 - Solve Poisson's equation.
