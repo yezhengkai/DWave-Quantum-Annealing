@@ -12,13 +12,13 @@ After creating an environment with all dependencies installed, configure your dw
 - Use `conda env update --prune --file environment.yml` to create a new conda environment and install dependencies. (If you want to create a new dev conda environment, use `conda env update --prune --file environment_dev.yml`)
 
 ### Use poetry
-- Make sure you have python interpreter in your system.
+- Make sure you have the appropriate version of the python interpreter in your system.
 - Install [poetry](https://python-poetry.org/docs/) and set your preferred shell environment so that you can use the `poetry` command.
 - Open your preferred shell and change the directory to the repository you downloaded.
 - Use `poetry install --no-dev` to install dependencies. (If you want to install dev dependencies, use `poetry install`)
 
 ### Use pip
-- Make sure you have python interpreter and pip in your system.
+- Make sure you have the appropriate version of the python interpreter and pip in your system.
 - Open your preferred shell and change the directory to the repository you downloaded.
 - Use `pip install -r requirement.txt` to install dependencies. (If you want to install dev dependencies, use `pip install -r requirement_dev.txt`)
 
